@@ -1,12 +1,12 @@
 import argparse
 import logging
-
-from mcp.server.fastmcp import FastMCP, Context
-from yeti.api import YetiApi
-from collections.abc import AsyncIterator
-from dataclasses import dataclass
-from contextlib import asynccontextmanager
 import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+
+from mcp.server.fastmcp import Context, FastMCP
+from yeti.api import YetiApi
 
 DEFAULT_YETI_ENDPOINT = "http://127.0.0.1:3000"
 
