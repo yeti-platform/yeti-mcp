@@ -1,0 +1,18 @@
+[project]
+name = "yeti-mcp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.9.2",
+    "yeti-python>=2.0.8",
+]
+
+[tool.uv.sources]
+yeti-python = { git = "https://github.com/yeti-platform/yeti-python.git", branch = "improvements" }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.12",
+]
