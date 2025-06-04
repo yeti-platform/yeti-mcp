@@ -331,7 +331,7 @@ async def search_timesketch_events(
         • Boolean        `(ssh AND error) OR tag:bruteforce`
         • Date range     `datetime:[2025-04-01 TO 2025-04-02]`
         • Wildcard       `user:sam*`
-        • Regex          `host:/.*\\.corp\\.internal/`
+        • Regex          `host:/.*\\.google\\.com/`
 
     Args:
         sketch_id: The ID of the Timesketch sketch to search.
