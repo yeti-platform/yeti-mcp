@@ -272,6 +272,9 @@ def get_neighbors(
     )
 
 
+# Timesketch tools
+
+
 @mcp.tool()
 async def discover_data_types(sketch_id: int):
     """
@@ -310,7 +313,8 @@ async def search_timesketch_events(
     starred: bool = False,
 ) -> list[dict[str, Any]]:
     """
-    Returns a list of event dictionaries (limited by max_events, if provided).
+    Search a Timesketch sketch and return a list of event dictionaries
+      (limited by max_events, if provided).
 
         Events always contain the following fields:
         • datetime (useful for sorting)
@@ -372,9 +376,7 @@ async def search_timesketch_events(
 
     extra_cols = []
     if "yara_match" in result_df.columns:
-        result_df["yara_match"] = result_df["yara_match"].fillna(
-            "N/A"
-        )  # Keep NaN handling
+        result_df["yara_match"] = result_df["yara_match"].fillna("N/A")
         extra_cols.append("yara_match")
 
     if "sha256_hash" in result_df.columns:
