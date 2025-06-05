@@ -102,6 +102,28 @@ def add_observables_bulk(
 
 
 @mcp.tool()
+def tag_object(
+    yeti_object: dict[str, Any],
+    tags: list[str],
+) -> dict[str, Any]:
+    """
+    Tag an object in Yeti.
+
+    Args:
+        yeti_object: The Yeti object to tag. This should be a dictionary
+            representing the object, typically obtained from another API call.
+            It must contain 'id' and 'root_type' keys.
+        tags: A list of tags to apply to the object.
+
+    Returns:
+        A dictionary confirming the tagging operation.
+    """
+    client = _get_yeti_client()
+    result = client.tag_object(yeti_object, tags)
+    return result
+
+
+@mcp.tool()
 def link_objects(
     source: dict[str, Any],
     target: dict[str, Any],
