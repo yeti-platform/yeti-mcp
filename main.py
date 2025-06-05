@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 from fastmcp import Context, FastMCP
+from fastmcp.server.dependencies import get_context
+
 from yeti.api import YetiApi, SUPPORTED_IOC_TYPES
 
 from typing import Any
@@ -39,7 +41,7 @@ mcp = FastMCP("yeti-mcp", dependencies=["yeti-api"], lifespan=app_lifespan)
 
 
 def _get_yeti_client() -> YetiApi:
-    ctx: Context = mcp.get_context()
+    ctx: Context = get_context()
     if not hasattr(ctx.request_context, "lifespan_context"):
         raise RuntimeError("Lifespan context is not available")
     return ctx.request_context.lifespan_context.yeti_client
