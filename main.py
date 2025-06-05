@@ -59,9 +59,21 @@ def get_supported_ioc_types() -> list[str]:
 
 
 @mcp.tool()
-def match_observables(observables: list[str]) -> list:
+def match_observables(observables: list[str], regex_match: True) -> list:
     """
     Match observables against Yeti's database.
+
+    This performs a more complex search than a simple substring match:
+
+    * Searches for exact matches of the observables.
+    * Searches for indicators that match the observables.
+    * Searches Yeti bloom filters for known observables.
+    * Returns entities and indicators that linked to known observables.
+
+    Can also perform regex matching if the user needs fuzzy searching or is not
+    sure about the exact observable format.
+
+
 
     Args:
         observables: A list of observables to search for.
@@ -70,7 +82,32 @@ def match_observables(observables: list[str]) -> list:
         A list of observables found in Yeti.
     """
     client = _get_yeti_client()
-    results = client.match_observables(observables)
+    results = client.match_observables(observables, regex_match=regex_match)
+    return results
+
+
+@mcp.tool()
+def search_observables(
+    value: str,
+    tags: list[str] | None = None,
+    count: int = 100,
+    page: int = 0,
+) -> list:
+    """
+    Search for observables in Yeti.
+
+    Args:
+        value: A substring to search for in observable values.
+            If the value is empty, it returns all observables.
+        tags: A list of tags to filter the observables by.
+        count: The max number of results to return.
+        page: The page number for pagination.
+
+    Returns:
+        A list of observables matching the search query.
+    """
+    client = _get_yeti_client()
+    results = client.search_observables(value, tags=tags, count=count, page=page)
     return results
 
 
@@ -244,22 +281,65 @@ def search_indicators(
 
 
 @mcp.tool()
+def search_dfiq(
+    name: str,
+    dfiq_type: str | None = None,
+    count: int = 100,
+    page: int = 0,
+) -> list:
+    """
+    Search for DFIQ objects in Yeti.
+
+    Valid DFIQ types are {"scenario", "facet", "question"}
+
+    The DFIQ graph goes Scenario -> (optional Facet) -> Question.
+
+    Questions contain approaches to answering the question.
+
+    Args:
+        name: Return DFIQ objects matching this name (substring).
+            If the name is empty, it may return all DFIQ objects (behavior depends on API).
+        dfiq_type: The type of DFIQ object to filter by (e.g., "scenario").
+        count: The max number of results to return.
+            (Note: The underlying yeti-python client.search_dfiq method may not
+            directly use this parameter for pagination with its default implementation.)
+        page: The page number for pagination.
+            (Note: The underlying yeti-python client.search_dfiq method may not
+            directly use this parameter for pagination with its default implementation.)
+
+    Returns:
+        A list of DFIQ objects matching the criteria.
+    """
+    client = _get_yeti_client()
+    results = client.search_dfiq(name=name, dfiq_type=dfiq_type, count=count, page=page)
+    return results
+
+
+@mcp.tool()
 def get_neighbors(
     source: str,
     target_types: list[str] | None = None,
     direction: str = "outbound",
+    min_hops: int = 1,
+    max_hops: int = 1,
     count: int = 10,
     page: int = 0,
 ) -> list:
     """
     Get neighbors of an object by searching the Yeti graph. This can be
-    used to find related objects based on the source object. (e.g. find TTPs
-    related to a threat actor entity).
+    used to find related objects based on the source object.
+
+    Examples:
+      * Find TTPs related to a threat actor entity
+      * Find Yara rules associated to a malware entity
+      * Find questions associated to a DFIQ scenario (can be 1 or 2 hops away)
 
     Args:
         source: The <type>/ID notation of the source object for which to find neighbors, e.g. entities/1234.
-        dierction: The direction of the search, either "inbound" or "outbound" or "any".
+        direction: The direction of the search, either "inbound" or "outbound" or "any".
         target_types: A list of target object (entities or indicators) types to filter neighbors by.
+        min_hops: The minimum number of hops to traverse in the graph.
+        max_hops: The maximum number of hops to traverse in the graph.
         count: The max number of results to return.
         page: The page number for pagination.
 
@@ -273,6 +353,8 @@ def get_neighbors(
         target_types=target_types,
         include_original=False,
         direction=direction,
+        min_hops=min_hops,
+        max_hops=max_hops,
         count=count,
         page=page,
     )
