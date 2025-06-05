@@ -708,7 +708,7 @@ dev = [{ name = "ruff", specifier = ">=0.11.12" }]
 [[package]]
 name = "yeti-python"
 version = "2.0.8"
-source = { git = "https://github.com/yeti-platform/yeti-python.git?branch=improvements#a05d980e5a5e6268d8c5ff237c61ff6d8beb7ae8" }
+source = { git = "https://github.com/yeti-platform/yeti-python.git?branch=improvements#8de1a06dee7cc5b3804c35acf8f976a1ba25fae5" }
 dependencies = [
     { name = "click" },
     { name = "requests" },
