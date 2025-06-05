@@ -11,10 +11,13 @@ services:
     volumes:
       - ../:/app
     networks:
+      - default
       - dev_default
       - timesketch_default
 
 networks:
+  default:
+    driver: bridge
   dev_default:
     external: true
   timesketch_default:
