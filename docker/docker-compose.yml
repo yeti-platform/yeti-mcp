@@ -7,22 +7,15 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - YETI_ENDPOINT=http://dev-frontend-1:3000
+      - YETI_ENDPOINT=${YETI_ENDPOINT}
       - YETI_API_KEY=${YETI_API_KEY}
-      - TIMESKETCH_HOST=timesketch-dev
-      - TIMESKETCH_PORT=5000
-      - TIMESKETCH_USER=${TIMESKETCH_USER}
-      - TIMESKETCH_PASSWORD=${TIMESKETCH_PASSWORD}
     volumes:
       - ../:/app
     networks:
-      - default
       - dev_default
       - timesketch_default
 
 networks:
-  default:
-    driver: bridge
   dev_default:
     external: true
   timesketch_default:

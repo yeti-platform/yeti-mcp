@@ -5,8 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "mcp>=1.9.2",
-    "timesketch-api-client>=20250521",
+    "fastmcp>=2.6.1",
     "yeti-python>=2.0.8",
 ]
 
