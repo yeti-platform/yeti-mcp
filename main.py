@@ -59,7 +59,7 @@ def get_supported_ioc_types() -> list[str]:
 
 
 @mcp.tool()
-def match_observables(observables: list[str], regex_match: True) -> list:
+def match_observables(observables: list[str], regex_match: bool = True) -> list:
     """
     Match observables against Yeti's database.
 
