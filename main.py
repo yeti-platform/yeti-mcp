@@ -73,10 +73,10 @@ def match_observables(observables: list[str], regex_match: bool = True) -> list:
     Can also perform regex matching if the user needs fuzzy searching or is not
     sure about the exact observable format.
 
-
-
     Args:
         observables: A list of observables to search for.
+        regex_match: If True, uses regex matching for values passed in observables.
+            Can be dramatically slower than exact matching, so use with caution.
 
     Returns:
         A list of observables found in Yeti.
