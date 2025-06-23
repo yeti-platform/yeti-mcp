@@ -699,7 +699,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastmcp", specifier = ">=2.6.1" },
-    { name = "yeti-python", git = "https://github.com/yeti-platform/yeti-python.git?branch=improvements" },
+    { name = "yeti-python", git = "https://github.com/yeti-platform/yeti-python.git?branch=main" },
 ]
 
 [package.metadata.requires-dev]
@@ -708,7 +708,7 @@ dev = [{ name = "ruff", specifier = ">=0.11.12" }]
 [[package]]
 name = "yeti-python"
 version = "2.0.8"
-source = { git = "https://github.com/yeti-platform/yeti-python.git?branch=improvements#8de1a06dee7cc5b3804c35acf8f976a1ba25fae5" }
+source = { git = "https://github.com/yeti-platform/yeti-python.git?branch=main#d29cd1890995b101e6c98d75287e57a9123940cd" }
 dependencies = [
     { name = "click" },
     { name = "requests" },
