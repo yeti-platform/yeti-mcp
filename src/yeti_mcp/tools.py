@@ -1,48 +1,10 @@
-import argparse
-import logging
-import os
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
-from dataclasses import dataclass
-import functools
-
-from fastmcp import Context, FastMCP
-
-from yeti.api import YetiApi, SUPPORTED_IOC_TYPES
-
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from .utils import get_yeti_client
 
+from fastmcp import FastMCP
 
-@functools.cache
-def get_yeti_client() -> YetiApi:
-    """
-    Get a cached instance of the YetiApi client.
-    This is used to avoid creating multiple instances of the client.
-    """
-    yeti_endpoint = os.environ.get("YETI_ENDPOINT")
-    yeti_api_key = os.environ.get("YETI_API_KEY")
-    if not yeti_endpoint or not yeti_api_key:
-        logger.error("YETI_ENDPOINT and YETI_API_KEY environment variables must be set")
-        raise ValueError("Missing Yeti API configuration")
-    yeti_client = YetiApi(yeti_endpoint)
-    yeti_client.auth_api_key(yeti_api_key)
-    return yeti_client
-
-
-mcp = FastMCP("yeti-mcp", dependencies=["yeti-api"])
-
-
-@mcp.resource("yeti://supported_ioc_types")
-def get_supported_ioc_types() -> list[str]:
-    """
-    Get the list of supported IOC types.
-
-    Returns:
-        A list of supported IOC types.
-    """
-    return SUPPORTED_IOC_TYPES
+mcp = FastMCP(name="yeti-tools")
 
 
 @mcp.tool()
@@ -345,34 +307,3 @@ def get_neighbors(
         count=count,
         page=page,
     )
-
-
-def main():
-    parser = argparse.ArgumentParser(description="MCP server for Yeti")
-    parser.add_argument(
-        "--mcp-host",
-        type=str,
-        help="Host to run MCP server on (only used for sse), default: 127.0.0.1",
-        default="127.0.0.1",
-    )
-    parser.add_argument(
-        "--mcp-port",
-        type=int,
-        help="Port to run MCP server on (only used for sse), default: 8081",
-        default=8081,
-    )
-
-    args = parser.parse_args()
-
-    logger.info(f"Running MCP server on {args.mcp_host}:{args.mcp_port}")
-    try:
-        mcp.settings.port = args.mcp_port
-        mcp.settings.host = args.mcp_host
-        mcp.run(transport="sse")
-    except KeyboardInterrupt:
-        logger.info("Server stopped by user")
-        return
-
-
-if __name__ == "__main__":
-    main()
