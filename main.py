@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 from fastmcp import Context, FastMCP
-from fastmcp.server.dependencies import get_context
 
 from yeti.api import YetiApi, SUPPORTED_IOC_TYPES
 
@@ -40,8 +39,7 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
 mcp = FastMCP("yeti-mcp", dependencies=["yeti-api"], lifespan=app_lifespan)
 
 
-def _get_yeti_client() -> YetiApi:
-    ctx: Context = get_context()
+def _get_yeti_client(ctx: Context) -> YetiApi:
     if not hasattr(ctx.request_context, "lifespan_context"):
         raise RuntimeError("Lifespan context is not available")
     return ctx.request_context.lifespan_context.yeti_client
@@ -59,7 +57,9 @@ def get_supported_ioc_types() -> list[str]:
 
 
 @mcp.tool()
-def match_observables(observables: list[str], regex_match: bool = True) -> list:
+def match_observables(
+    ctx: Context, observables: list[str], regex_match: bool = True
+) -> list:
     """
     Match observables against Yeti's database.
 
@@ -81,13 +81,14 @@ def match_observables(observables: list[str], regex_match: bool = True) -> list:
     Returns:
         A list of observables found in Yeti.
     """
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     results = client.match_observables(observables, regex_match=regex_match)
     return results
 
 
 @mcp.tool()
 def search_observables(
+    ctx: Context,
     value: str,
     tags: list[str] | None = None,
     count: int = 100,
@@ -106,13 +107,14 @@ def search_observables(
     Returns:
         A list of observables matching the search query.
     """
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     results = client.search_observables(value, tags=tags, count=count, page=page)
     return results
 
 
 @mcp.tool()
 def add_observables_bulk(
+    ctx: Context,
     observables: list[dict[str, str]],
     tags: list[str] | None = None,
 ) -> list:
@@ -133,13 +135,14 @@ def add_observables_bulk(
     Returns:
         A list of added observables.
     """
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     results = client.add_observables_bulk(observables, tags=tags)
     return results
 
 
 @mcp.tool()
 def tag_object(
+    ctx: Context,
     yeti_object: dict[str, Any],
     tags: list[str],
 ) -> dict[str, Any]:
@@ -155,13 +158,14 @@ def tag_object(
     Returns:
         A dictionary confirming the tagging operation.
     """
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     result = client.tag_object(yeti_object, tags)
     return result
 
 
 @mcp.tool()
 def link_objects(
+    ctx: Context,
     source: dict[str, Any],
     target: dict[str, Any],
     link_type: str = "related",
@@ -188,13 +192,14 @@ def link_objects(
     Returns:
         A dictionary containing the details of the created link.
     """
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     result = client.link_objects(source, target, link_type, description)
     return result
 
 
 @mcp.tool()
 def search_entities(
+    ctx: Context,
     name: str,
     entity_type: str | None = None,
     description: str | None = None,
@@ -232,13 +237,14 @@ def search_entities(
     if tags:
         kwargs["tags"] = tags
 
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     results = client.search_entities(**kwargs)
     return results
 
 
 @mcp.tool()
 def search_indicators(
+    ctx: Context,
     name: str,
     indicator_type: str | None = None,
     description: str | None = None,
@@ -275,13 +281,14 @@ def search_indicators(
     if tags:
         kwargs["tags"] = tags
 
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     results = client.search_indicators(**kwargs)
     return results
 
 
 @mcp.tool()
 def search_dfiq(
+    ctx: Context,
     name: str,
     dfiq_type: str | None = None,
     count: int = 100,
@@ -310,13 +317,14 @@ def search_dfiq(
     Returns:
         A list of DFIQ objects matching the criteria.
     """
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     results = client.search_dfiq(name=name, dfiq_type=dfiq_type, count=count, page=page)
     return results
 
 
 @mcp.tool()
 def get_neighbors(
+    ctx: Context,
     source: str,
     target_types: list[str] | None = None,
     direction: str = "outbound",
@@ -347,7 +355,7 @@ def get_neighbors(
         A list of neighbors for the source object. If the number of results is lower than count,
         the last page has been reached.
     """
-    client = _get_yeti_client()
+    client = _get_yeti_client(ctx)
     return client.search_graph(
         source,
         target_types=target_types,
