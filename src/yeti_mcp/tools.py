@@ -1,8 +1,8 @@
 from typing import Any
 
-from .utils import get_yeti_client
-
 from fastmcp import FastMCP
+
+from .utils import get_yeti_client
 
 mcp = FastMCP(name="yeti-tools")
 
@@ -26,6 +26,7 @@ def match_observables(observables: list[str], regex_match: bool = True) -> list:
         observables: A list of observables to search for.
         regex_match: If True, uses regex matching for values passed in observables.
             Can be dramatically slower than exact matching, so use with caution.
+            Default is True.
 
     Returns:
         A list of observables found in Yeti.
@@ -48,9 +49,9 @@ def search_observables(
     Args:
         value: A substring to search for in observable values.
             If the value is empty, it returns all observables.
-        tags: A list of tags to filter the observables by.
-        count: The max number of results to return.
-        page: The page number for pagination.
+        tags: A list of tags to filter the observables by. Default is None (no filtering).
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
 
     Returns:
         A list of observables matching the search query.
@@ -129,8 +130,8 @@ def link_objects(
     <hash> (source) -> <malware> (target) with link_type "related" and description "seen in".
 
     Args:
-        source: The source object.
-        target: The target object.
+        source: The source object as a dictionary. It should contain 'id' and 'root_type' keys.
+        target: The target object as a dictionary. It should contain 'id' and 'root_type' keys.
         link_type: The type of link to create (default is "related").
         description: An optional description for the link.
 
@@ -162,11 +163,11 @@ def search_entities(
     Args:
         name: Return entities matching this name (substring).
             If the name is empty, it returns all entities.
-        entity_type: The type of malware to filter by.
-        description: A substring to search for in malware descriptions.
-        tags: A list of tags to filter the malware by.
-        count: The max number of results to return.
-        page: The page number for pagination.
+        entity_type: The type of malware to filter by. Default is None (all types).
+        description: A substring to search for in malware descriptions. Default is None (no filtering).
+        tags: A list of tags to filter the malware by. Default is None (no filtering).
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
 
     Returns:
         A list of malware entities matching the name. If the number of
@@ -205,11 +206,11 @@ def search_indicators(
     Args:
         name: Return indicators matching this name (substring).
             If the name is empty, it returns all indicators.
-        indicator_type: The type of indicator to filter by.
-        description: A substring to search for in indicator descriptions.
-        tags: A list of tags to filter the indicators by.
-        count: The max number of results to return.
-        page: The page number for pagination.
+        indicator_type: The type of indicator to filter by. Default is None (all types).
+        description: A substring to search for in indicator descriptions. Default is None (no filtering).
+        tags: A list of tags to filter the indicators by. Default is None (no filtering).
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
 
     Returns:
         list: A list of indicators matching the name. If the number of
@@ -235,26 +236,24 @@ def search_dfiq(
     dfiq_type: str | None = None,
     count: int = 100,
     page: int = 0,
-) -> list:
+) -> list[dict[str, Any]]:
     """
     Search for DFIQ objects in Yeti.
 
-    Valid DFIQ types are {"scenario", "facet", "question"}
+    * Valid DFIQ types are {"scenario", "facet", "question"}
+    * The DFIQ graph goes Scenario -> (optional Facet) -> Question.
+    * Questions contain approaches to answering the question.
+    * Names are case-insensitive.
 
-    The DFIQ graph goes Scenario -> (optional Facet) -> Question.
-
-    Questions contain approaches to answering the question.
+    Leave the name empty to return all DFIQ objects; this is particulary useful
+    if the name of the existing DFIQobject is not known.
 
     Args:
         name: Return DFIQ objects matching this name (substring).
             If the name is empty, it may return all DFIQ objects (behavior depends on API).
-        dfiq_type: The type of DFIQ object to filter by (e.g., "scenario").
-        count: The max number of results to return.
-            (Note: The underlying yeti-python client.search_dfiq method may not
-            directly use this parameter for pagination with its default implementation.)
-        page: The page number for pagination.
-            (Note: The underlying yeti-python client.search_dfiq method may not
-            directly use this parameter for pagination with its default implementation.)
+        dfiq_type: The type of DFIQ object to filter by (e.g., "scenario"). Default is None (all types).
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
 
     Returns:
         A list of DFIQ objects matching the criteria.
@@ -282,21 +281,25 @@ def get_neighbors(
       * Find TTPs related to a threat actor entity
       * Find Yara rules associated to a malware entity
       * Find questions associated to a DFIQ scenario (can be 1 or 2 hops away)
+      * Find related DFIQ objects (facets and questions) for a given DFIQ scenario.
 
     Args:
-        source: The <type>/ID notation of the source object for which to find neighbors, e.g. entities/1234.
+        source: The <root_type>/ID notation of the source object for which to find neighbors;
+          e.g. entities/1234, dfiq/999, observables/5678, indicators/888.
         direction: The direction of the search, either "inbound" or "outbound" or "any".
-        target_types: A list of target object (entities or indicators) types to filter neighbors by.
-        min_hops: The minimum number of hops to traverse in the graph.
-        max_hops: The maximum number of hops to traverse in the graph.
-        count: The max number of results to return.
-        page: The page number for pagination.
+        target_types: A list of target object (entities or indicators) types to filter neighbors by. Default is None (all types).
+        min_hops: The minimum number of hops to traverse in the graph. Default is 1.
+        max_hops: The maximum number of hops to traverse in the graph. Default is 1.
+        count: The max number of results to return. Default is 10.
+        page: The page number for pagination. Starts at 0.
 
     Returns:
-        A list of neighbors for the source object. If the number of results is lower than count,
-        the last page has been reached.
+        A list of neighbors for the source object. The neighbors already contain all object data.
+        If the number of results is lower than count, the last page has been reached.
     """
     client = get_yeti_client()
+    if not target_types:
+        target_types = []
     return client.search_graph(
         source,
         target_types=target_types,
