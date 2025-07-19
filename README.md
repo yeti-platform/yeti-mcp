@@ -1,5 +1,7 @@
 # yeti-mcp
 
+[![Unit tests](https://github.com/yeti-platform/yeti-mcp/actions/workflows/unittests.yaml/badge.svg?branch=main)](https://github.com/yeti-platform/yeti-mcp/actions/workflows/unittests.yaml)
+
 ## How to run
 
 ```
