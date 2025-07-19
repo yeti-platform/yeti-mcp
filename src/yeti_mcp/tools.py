@@ -236,7 +236,7 @@ def search_dfiq(
     dfiq_type: str | None = None,
     count: int = 100,
     page: int = 0,
-) -> list[dict[str, Any]]:
+) -> list:
     """
     Search for DFIQ objects in Yeti.
 

@@ -9,14 +9,14 @@ from src import main
 @pytest.mark.asyncio
 @patch("src.main.tools.get_yeti_client")
 async def test_match_observables(mock_yeti_client):
-    mock_yeti_client.return_value.match_observables.return_value = {
-        "result": "mocked_result"
-    }
+    mock_yeti_client.return_value.match_observables.return_value = [
+        {"result": "mocked_result"}
+    ]
     async with Client(main.mcp) as client:
         result = await client.call_tool(
             "match_observables", {"observables": ["google.com"]}
         )
-        assert json.loads(result[0].text) == {"result": "mocked_result"}
+        assert result.data == [{"result": "mocked_result"}]
         mock_yeti_client.return_value.match_observables.assert_called_once_with(
             ["google.com"], regex_match=True
         )
@@ -25,14 +25,14 @@ async def test_match_observables(mock_yeti_client):
 @pytest.mark.asyncio
 @patch("src.main.tools.get_yeti_client")
 async def test_search_observables(mock_yeti_client):
-    mock_yeti_client.return_value.search_observables.return_value = {
-        "result": "mocked_search_result"
-    }
+    mock_yeti_client.return_value.search_observables.return_value = [
+        {"result": "mocked_search_result"}
+    ]
     async with Client(main.mcp) as client:
         result = await client.call_tool(
             "search_observables", {"value": "example.com", "tags": ["tag1", "tag2"]}
         )
-        assert json.loads(result[0].text) == {"result": "mocked_search_result"}
+        assert result.data == [{"result": "mocked_search_result"}]
         mock_yeti_client.return_value.search_observables.assert_called_once_with(
             "example.com",
             tags=["tag1", "tag2"],
@@ -52,7 +52,7 @@ async def test_add_observables_bulk(mock_yeti_client):
             "add_observables_bulk",
             {"observables": [{"type": "ip", "value": "1.2.3.4"}], "tags": ["malware"]},
         )
-        assert json.loads(result[0].text) == {"type": "ip", "value": "1.2.3.4"}
+        assert result.data == [{"type": "ip", "value": "1.2.3.4"}]
         mock_yeti_client.return_value.add_observables_bulk.assert_called_once_with(
             [{"type": "ip", "value": "1.2.3.4"}], tags=["malware"]
         )
@@ -68,7 +68,7 @@ async def test_tag_object(mock_yeti_client):
         result = await client.call_tool(
             "tag_object", {"yeti_object": yeti_object, "tags": tags}
         )
-        assert json.loads(result[0].text) == {"status": "ok"}
+        assert result.data == {"status": "ok"}
         mock_yeti_client.return_value.tag_object.assert_called_once_with(
             yeti_object, tags
         )
@@ -90,7 +90,7 @@ async def test_link_objects(mock_yeti_client):
                 "description": "used by",
             },
         )
-        assert json.loads(result[0].text) == {"link": "created"}
+        assert result.data == {"link": "created"}
         mock_yeti_client.return_value.link_objects.assert_called_once_with(
             source, target, "related", "used by"
         )
@@ -110,7 +110,7 @@ async def test_search_entities(mock_yeti_client):
                 "tags": None,
             },
         )
-        assert json.loads(result[0].text) == {"name": "entity1"}
+        assert result.data == [{"name": "entity1"}]
         mock_yeti_client.return_value.search_entities.assert_called_once_with(
             name="entity1", count=100, page=0, entity_type="malware"
         )
@@ -132,7 +132,7 @@ async def test_search_indicators(mock_yeti_client):
                 "tags": None,
             },
         )
-        assert json.loads(result[0].text) == {"name": "indicator1"}
+        assert result.data == [{"name": "indicator1"}]
         mock_yeti_client.return_value.search_indicators.assert_called_once_with(
             name="indicator1", count=100, page=0, indicator_type="yara"
         )
@@ -141,13 +141,15 @@ async def test_search_indicators(mock_yeti_client):
 @pytest.mark.asyncio
 @patch("src.main.tools.get_yeti_client")
 async def test_search_dfiq(mock_yeti_client):
-    mock_yeti_client.return_value.search_dfiq.return_value = [{"name": "scenario1"}]
+    mock_yeti_client.return_value.search_dfiq.return_value = [
+        {"name": "scenario1"},
+    ]
     async with Client(main.mcp) as client:
         result = await client.call_tool(
             "search_dfiq",
             {"name": "scenario1", "dfiq_type": "scenario", "count": 100, "page": 0},
         )
-        assert json.loads(result[0].text) == {"name": "scenario1"}
+        assert result.data == [{"name": "scenario1"}]
         mock_yeti_client.return_value.search_dfiq.assert_called_once_with(
             name="scenario1", dfiq_type="scenario", count=100, page=0
         )
@@ -170,7 +172,7 @@ async def test_get_neighbors(mock_yeti_client):
                 "page": 0,
             },
         )
-        assert json.loads(result[0].text) == {"id": "neighbor1"}
+        assert result.data == [{"id": "neighbor1"}]
         mock_yeti_client.return_value.search_graph.assert_called_once_with(
             "entities/1234",
             target_types=["malware"],
