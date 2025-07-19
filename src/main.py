@@ -3,8 +3,8 @@ import logging
 
 from fastmcp import FastMCP
 
-from yeti_mcp import resources
-from yeti_mcp import tools
+from .yeti_mcp import resources
+from .yeti_mcp import tools
 
 
 logger = logging.getLogger(__name__)
