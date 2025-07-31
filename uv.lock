@@ -955,7 +955,7 @@ dev = [
 [[package]]
 name = "yeti-python"
 version = "2.0.8"
-source = { git = "https://github.com/yeti-platform/yeti-python.git?branch=main#d29cd1890995b101e6c98d75287e57a9123940cd" }
+source = { git = "https://github.com/yeti-platform/yeti-python.git?branch=main#88702dde1cdc7580fe7278fdaf42a5a1e98c8582" }
 dependencies = [
     { name = "click" },
     { name = "requests" },
