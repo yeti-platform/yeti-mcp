@@ -1,0 +1,29 @@
+{
+    "inputs": [
+        {
+            "type": "promptString",
+            "id": "gemini-key",
+            "description": "Gemini API Key",
+            "password": true
+        }
+    ],
+    "servers": {
+        "mcp-server-yeti": {
+            "type": "sse",
+            // "command": "uv",
+            // "args": [
+            //     "run",
+            //     "python",
+            //     "src/main.py",
+            //     "--mcp-host",
+            //     "0.0.0.0",
+            //     "--mcp-port",
+            //     "8081"
+            // ],
+            "url": "http://localhost:8081/sse",
+            "env": {
+                "GOOGLE_API_KEY": "${input:gemini-key}",
+            },
+        }
+    }
+}
