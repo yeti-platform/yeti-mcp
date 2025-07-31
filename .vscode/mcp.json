@@ -22,7 +22,7 @@
             // ],
             "url": "http://localhost:8081/sse",
             "env": {
-                "GOOGLE_API_KEY": "${input:gemini-key}",
+                "GOOGLE_API_KEY": "${input:gemini-key}"
             },
         }
     }
