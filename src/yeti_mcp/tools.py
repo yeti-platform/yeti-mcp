@@ -8,6 +8,53 @@ mcp = FastMCP(name="yeti-tools")
 
 
 @mcp.tool()
+def search_tags(
+    name: str,
+    count: int = 100,
+    page: int = 0,
+) -> list[dict[str, Any]]:
+    """
+    Search for tags in Yeti.
+
+    Args:
+        name: A substring to search for in tag names. If the value is empty,
+            it returns all tags.
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
+
+    Returns:
+        A list of tags matching the search query.
+    """
+    client = get_yeti_client()
+    results = client.search_tags(name, count=count, page=page)
+    return results
+
+
+@mcp.tool()
+def get_multiple_tags(
+    names: list[str],
+    count: int = 100,
+    page: int = 0,
+) -> list[dict[str, Any]]:
+    """
+    Get multiple tags from Yeti by name.
+
+    Useful to understand more about specific tags and their meaning.
+
+    Args:
+        names: A list of tag names to retrieve.
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
+
+    Returns:
+        A list of tags matching the provided names.
+    """
+    client = get_yeti_client()
+    results = client.get_multiple_tags(names, count=count, page=page)
+    return results
+
+
+@mcp.tool()
 def match_observables(observables: list[str], regex_match: bool = True) -> list:
     """
     Match observables against Yeti's database.
@@ -188,6 +235,30 @@ def search_entities(
 
 
 @mcp.tool()
+def get_multiple_entities(
+    names: list[str],
+    count: int = 100,
+    page: int = 0,
+) -> list:
+    """
+    Get multiple entities from Yeti by name.
+
+    Useful to understand more about specific entities and their meaning.
+
+    Args:
+        names: A list of entity names to retrieve.
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
+
+    Returns:
+        A list of entities matching the provided names.
+    """
+    client = get_yeti_client()
+    results = client.get_multiple_entities(names, count=count, page=page)
+    return results
+
+
+@mcp.tool()
 def search_indicators(
     name: str,
     indicator_type: str | None = None,
@@ -231,6 +302,30 @@ def search_indicators(
 
 
 @mcp.tool()
+def get_multiple_indicators(
+    names: list[str],
+    count: int = 100,
+    page: int = 0,
+) -> list:
+    """
+    Get multiple indicators from Yeti by name.
+
+    Useful to understand more about specific indicators and their meaning.
+
+    Args:
+        names: A list of indicator names to retrieve.
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
+
+    Returns:
+        A list of indicators matching the provided names.
+    """
+    client = get_yeti_client()
+    results = client.get_multiple_indicators(names, count=count, page=page)
+    return results
+
+
+@mcp.tool()
 def search_dfiq(
     name: str,
     dfiq_type: str | None = None,
@@ -260,6 +355,30 @@ def search_dfiq(
     """
     client = get_yeti_client()
     results = client.search_dfiq(name=name, dfiq_type=dfiq_type, count=count, page=page)
+    return results
+
+
+@mcp.tool()
+def get_multiple_dfiq(
+    names: list[str],
+    count: int = 100,
+    page: int = 0,
+) -> list:
+    """
+    Get multiple DFIQ objects from Yeti by name.
+
+    Useful to understand more about specific DFIQ objects and their meaning.
+
+    Args:
+        names: A list of DFIQ object names to retrieve.
+        count: The max number of results to return. Default is 100.
+        page: The page number for pagination. Starts at 0.
+
+    Returns:
+        A list of DFIQ objects matching the provided names.
+    """
+    client = get_yeti_client()
+    results = client.get_multiple_dfiq(names, count=count, page=page)
     return results
 
 
