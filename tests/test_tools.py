@@ -5,7 +5,7 @@ from src import server
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_match_observables(mock_yeti_client):
     mock_yeti_client.return_value.match_observables.return_value = [
         {"result": "mocked_result"}
@@ -21,7 +21,7 @@ async def test_match_observables(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_search_observables(mock_yeti_client):
     mock_yeti_client.return_value.search_observables.return_value = [
         {"result": "mocked_search_result"}
@@ -40,7 +40,7 @@ async def test_search_observables(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_add_observables_bulk(mock_yeti_client):
     mock_yeti_client.return_value.add_observables_bulk.return_value = [
         {"type": "ip", "value": "1.2.3.4"}
@@ -57,7 +57,7 @@ async def test_add_observables_bulk(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_tag_object(mock_yeti_client):
     mock_yeti_client.return_value.tag_object.return_value = {"status": "ok"}
     yeti_object = {"id": "123", "root_type": "entity"}
@@ -73,7 +73,7 @@ async def test_tag_object(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_link_objects(mock_yeti_client):
     mock_yeti_client.return_value.link_objects.return_value = {"link": "created"}
     source = {"id": "1", "root_type": "observable"}
@@ -95,7 +95,7 @@ async def test_link_objects(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_search_entities(mock_yeti_client):
     mock_yeti_client.return_value.search_entities.return_value = [{"name": "entity1"}]
     async with Client(server.mcp) as client:
@@ -115,7 +115,7 @@ async def test_search_entities(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_get_multiple_entities(mock_yeti_client):
     mock_yeti_client.return_value.get_multiple_entities.return_value = [
         {"name": "entity1"},
@@ -137,7 +137,7 @@ async def test_get_multiple_entities(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_search_indicators(mock_yeti_client):
     mock_yeti_client.return_value.search_indicators.return_value = [
         {"name": "indicator1"}
@@ -159,7 +159,7 @@ async def test_search_indicators(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_get_multiple_indicators(mock_yeti_client):
     mock_yeti_client.return_value.get_multiple_indicators.return_value = [
         {"name": "indicator1"},
@@ -181,7 +181,7 @@ async def test_get_multiple_indicators(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_search_dfiq(mock_yeti_client):
     mock_yeti_client.return_value.search_dfiq.return_value = [
         {"name": "scenario1"},
@@ -198,7 +198,7 @@ async def test_search_dfiq(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_get_multiple_dfiq(mock_yeti_client):
     mock_yeti_client.return_value.get_multiple_dfiq.return_value = [
         {"name": "scenario1"},
@@ -220,7 +220,7 @@ async def test_get_multiple_dfiq(mock_yeti_client):
 
 
 @pytest.mark.asyncio
-@patch("src.server.tools.get_yeti_client")
+@patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_get_neighbors(mock_yeti_client):
     mock_yeti_client.return_value.search_graph.return_value = [{"id": "neighbor1"}]
     async with Client(server.mcp) as client:
