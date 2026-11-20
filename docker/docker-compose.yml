@@ -8,6 +8,8 @@ services:
     environment:
       - YETI_ENDPOINT=${YETI_ENDPOINT}
       - YETI_API_KEY=${YETI_API_KEY}
+      - YETI_MCP_PROFILE=${YETI_MCP_PROFILE:-read}
+      - YETI_MCP_AUTH_TOKEN=${YETI_MCP_AUTH_TOKEN}
     volumes:
       - ../:/app
     networks:
