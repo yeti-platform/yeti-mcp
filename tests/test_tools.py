@@ -8,26 +8,137 @@ from yeti.api import YetiApi
 from src import server
 
 
+def _relationship(rel_id, source, target, link_type, description):
+    return {
+        "id": rel_id,
+        "source": source,
+        "target": target,
+        "type": link_type,
+        "description": description,
+        "count": 1,
+        "root_type": "relationship",
+    }
+
+
+# A POST /api/v2/graph/match response (fields trimmed) for "203.0.113.7",
+# "evil.example.com" and "unknown.example.org": both known values are linked to
+# the Emotet entity and to each other, the hostname is also linked to an
+# observable that was not looked up, and a regex indicator matches the hostname.
+IP = {"id": "11", "value": "203.0.113.7", "type": "ipv4", "root_type": "observable"}
+HOST = {
+    "id": "12",
+    "value": "evil.example.com",
+    "type": "hostname",
+    "root_type": "observable",
+}
+OTHER = {"id": "13", "value": "198.51.100.9", "type": "ipv4", "root_type": "observable"}
+EMOTET = {"id": "21", "name": "Emotet", "type": "malware", "root_type": "entity"}
+REGEX = {"id": "31", "name": "evil-domains", "type": "regex", "root_type": "indicator"}
+IP_EMOTET = _relationship("41", "observables/11", "entities/21", "c2", "C2 server")
+HOST_EMOTET = _relationship(
+    "42", "observables/12", "entities/21", "delivers", "payload"
+)
+HOST_IP = _relationship("43", "observables/12", "observables/11", "resolves", "A")
+HOST_OTHER = _relationship(
+    "44", "observables/12", "observables/13", "resolves", "old A"
+)
+MATCH_RESPONSE = {
+    # One pair per link: Emotet comes back once for each value linked to it.
+    "entities": [[IP_EMOTET, EMOTET], [HOST_EMOTET, EMOTET]],
+    # The link between the two looked-up values is listed for each of them.
+    "observables": [[HOST_IP, HOST], [HOST_IP, IP], [HOST_OTHER, OTHER]],
+    "known": [IP, HOST],
+    "matches": [["evil.example.com", REGEX]],
+    "unknown": ["unknown.example.org"],
+}
+
+
 @pytest.mark.asyncio
 @patch("src.yeti_mcp.tools.get_yeti_client")
 async def test_match_observables(mock_yeti_client):
-    # Shape of the POST /api/v2/graph/match response.
-    match_response = {
+    mock_yeti_client.return_value.match_observables.return_value = MATCH_RESPONSE
+    async with Client(server.mcp) as client:
+        result = await client.call_tool(
+            "match_observables",
+            {"observables": ["203.0.113.7", "evil.example.com", "unknown.example.org"]},
+        )
+        mock_yeti_client.return_value.match_observables.assert_called_once_with(
+            ["203.0.113.7", "evil.example.com", "unknown.example.org"],
+            regex_match=False,
+        )
+    assert result.data == {
+        "known": [IP, HOST],
+        "unknown": ["unknown.example.org"],
+        "links": {
+            "203.0.113.7": [
+                {
+                    "object": "entities/21",
+                    "link_type": "c2",
+                    "description": "C2 server",
+                    "direction": "outbound",
+                },
+                {
+                    "object": "observables/12",
+                    "link_type": "resolves",
+                    "description": "A",
+                    "direction": "inbound",
+                },
+            ],
+            "evil.example.com": [
+                {
+                    "object": "entities/21",
+                    "link_type": "delivers",
+                    "description": "payload",
+                    "direction": "outbound",
+                },
+                {
+                    "object": "observables/11",
+                    "link_type": "resolves",
+                    "description": "A",
+                    "direction": "outbound",
+                },
+                {
+                    "object": "observables/13",
+                    "link_type": "resolves",
+                    "description": "old A",
+                    "direction": "outbound",
+                },
+            ],
+        },
+        "matches": {"evil.example.com": ["indicators/31"]},
+        # Each linked object once; looked-up values stay in "known".
+        "objects": {
+            "entities/21": EMOTET,
+            "observables/13": OTHER,
+            "indicators/31": REGEX,
+        },
+    }
+
+
+@pytest.mark.asyncio
+@patch("src.yeti_mcp.tools.get_yeti_client")
+async def test_match_observables_regex(mock_yeti_client):
+    mock_yeti_client.return_value.match_observables.return_value = {
         "entities": [],
         "observables": [],
         "known": [],
         "matches": [],
-        "unknown": ["google.com"],
+        "unknown": ["evil.*"],
     }
-    mock_yeti_client.return_value.match_observables.return_value = match_response
     async with Client(server.mcp) as client:
         result = await client.call_tool(
-            "match_observables", {"observables": ["google.com"]}
+            "match_observables", {"observables": ["evil.*"], "regex_match": True}
         )
-        assert result.data == match_response
         mock_yeti_client.return_value.match_observables.assert_called_once_with(
-            ["google.com"], regex_match=True
+            ["evil.*"], regex_match=True
         )
+    assert result.data == {
+        "known": [],
+        "unknown": ["evil.*"],
+        "links": {},
+        "matches": {},
+        "objects": {},
+    }
 
 
 @pytest.mark.asyncio
