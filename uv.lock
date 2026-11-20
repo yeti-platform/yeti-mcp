@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -220,7 +220,7 @@ version = "3.22.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
-    { name = "docstring-parser", marker = "python_full_version < '4.0'" },
+    { name = "docstring-parser", marker = "python_full_version < '4'" },
     { name = "rich" },
     { name = "rich-rst" },
 ]
@@ -954,8 +954,8 @@ dev = [
 
 [[package]]
 name = "yeti-python"
-version = "2.0.8"
-source = { git = "https://github.com/yeti-platform/yeti-python.git?branch=main#88702dde1cdc7580fe7278fdaf42a5a1e98c8582" }
+version = "2.4.0"
+source = { git = "https://github.com/yeti-platform/yeti-python.git?branch=main#f79a3b4c535634ac908563831eb762d6bddbf45a" }
 dependencies = [
     { name = "click" },
     { name = "requests" },
