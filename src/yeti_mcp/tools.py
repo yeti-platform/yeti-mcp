@@ -1,13 +1,24 @@
 from typing import Any
 
 from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from .utils import get_yeti_client
 
 mcp = FastMCP(name="yeti-tools")
 
+# Hints for MCP clients, e.g. to decide when to ask the user for confirmation.
+READ_ONLY = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+ADDS_DATA = ToolAnnotations(
+    readOnlyHint=False, destructiveHint=False, openWorldHint=False
+)
+# Adds data, but can also overwrite a field of an existing object.
+UPDATES_DATA = ToolAnnotations(
+    readOnlyHint=False, destructiveHint=True, openWorldHint=False
+)
 
-@mcp.tool()
+
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def search_tags(
     name: str,
     count: int = 100,
@@ -30,7 +41,7 @@ def search_tags(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def get_multiple_tags(
     names: list[str],
     count: int = 100,
@@ -111,7 +122,7 @@ def _group_match_results(response: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def match_observables(
     observables: list[str], regex_match: bool = False
 ) -> dict[str, Any]:
@@ -151,7 +162,7 @@ def match_observables(
     return _group_match_results(response)
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def search_observables(
     value: str,
     tags: list[str] | None = None,
@@ -176,7 +187,7 @@ def search_observables(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"contribute"}, annotations=ADDS_DATA)
 def add_observables_bulk(
     observables: list[dict[str, str]],
     tags: list[str] | None = None,
@@ -204,7 +215,7 @@ def add_observables_bulk(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"contribute"}, annotations=ADDS_DATA)
 def tag_object(
     yeti_object: dict[str, Any],
     tags: list[str],
@@ -226,7 +237,7 @@ def tag_object(
     return result
 
 
-@mcp.tool()
+@mcp.tool(tags={"contribute"}, annotations=UPDATES_DATA)
 def link_objects(
     source: dict[str, Any],
     target: dict[str, Any],
@@ -259,7 +270,7 @@ def link_objects(
     return result
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def search_entities(
     name: str,
     entity_type: str | None = None,
@@ -303,7 +314,7 @@ def search_entities(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def get_multiple_entities(
     names: list[str],
     count: int = 100,
@@ -327,7 +338,7 @@ def get_multiple_entities(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def search_indicators(
     name: str,
     indicator_type: str | None = None,
@@ -370,7 +381,7 @@ def search_indicators(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def get_multiple_indicators(
     names: list[str],
     count: int = 100,
@@ -394,7 +405,7 @@ def get_multiple_indicators(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def search_dfiq(
     name: str,
     dfiq_type: str | None = None,
@@ -427,7 +438,7 @@ def search_dfiq(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def get_multiple_dfiq(
     names: list[str],
     count: int = 100,
@@ -451,7 +462,7 @@ def get_multiple_dfiq(
     return results
 
 
-@mcp.tool()
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
 def get_neighbors(
     source: str,
     target_types: list[str] | None = None,

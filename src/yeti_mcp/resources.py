@@ -5,7 +5,7 @@ from fastmcp import FastMCP
 mcp = FastMCP(name="yeti-resources")
 
 
-@mcp.resource("yeti://supported_ioc_types")
+@mcp.resource("yeti://supported_ioc_types", tags={"read"})
 def get_supported_ioc_types() -> list[str]:
     """
     Get the list of supported IOC types.
