@@ -54,8 +54,67 @@ def get_multiple_tags(
     return results
 
 
+def _group_match_results(response: dict[str, Any]) -> dict[str, Any]:
+    """Groups a /graph/match response by looked-up value.
+
+    The API returns one [relationship, object] pair per link, with the full
+    object in every pair, so an entity linked to many of the values is repeated
+    once per link. Here each linked object is listed once in "objects", keyed by
+    its "<collection>/<id>" reference, and each value lists its links by
+    reference.
+    """
+    values_by_ref = {
+        f"observables/{known['id']}": known["value"]
+        for known in response.get("known", [])
+    }
+    links: dict[str, list[dict[str, Any]]] = {
+        value: [] for value in values_by_ref.values()
+    }
+    objects: dict[str, dict[str, Any]] = {}
+    seen: set[tuple[str, str]] = set()
+
+    for relationship, linked in response.get("entities", []) + response.get(
+        "observables", []
+    ):
+        ends = (
+            (relationship["source"], relationship["target"], "outbound"),
+            (relationship["target"], relationship["source"], "inbound"),
+        )
+        for own_end, other_end, direction in ends:
+            value = values_by_ref.get(own_end)
+            if value is None or (value, relationship["id"]) in seen:
+                continue
+            seen.add((value, relationship["id"]))
+            links.setdefault(value, []).append(
+                {
+                    "object": other_end,
+                    "link_type": relationship["type"],
+                    "description": relationship.get("description", ""),
+                    "direction": direction,
+                }
+            )
+            if other_end not in values_by_ref:
+                objects.setdefault(other_end, linked)
+
+    matches: dict[str, list[str]] = {}
+    for value, indicator in response.get("matches", []):
+        ref = f"indicators/{indicator['id']}"
+        matches.setdefault(value, []).append(ref)
+        objects.setdefault(ref, indicator)
+
+    return {
+        "known": response.get("known", []),
+        "unknown": sorted(response.get("unknown", [])),
+        "links": links,
+        "matches": matches,
+        "objects": objects,
+    }
+
+
 @mcp.tool()
-def match_observables(observables: list[str], regex_match: bool = True) -> list:
+def match_observables(
+    observables: list[str], regex_match: bool = False
+) -> dict[str, Any]:
     """
     Match observables against Yeti's database.
 
@@ -63,8 +122,7 @@ def match_observables(observables: list[str], regex_match: bool = True) -> list:
 
     * Searches for exact matches of the observables.
     * Searches for indicators that match the observables.
-    * Searches Yeti bloom filters for known observables.
-    * Returns entities and indicators that linked to known observables.
+    * Returns entities and observables linked to known observables.
 
     Can also perform regex matching if the user needs fuzzy searching or is not
     sure about the exact observable format.
@@ -73,14 +131,24 @@ def match_observables(observables: list[str], regex_match: bool = True) -> list:
         observables: A list of observables to search for.
         regex_match: If True, uses regex matching for values passed in observables.
             Can be dramatically slower than exact matching, so use with caution.
-            Default is True.
+            Default is False.
 
     Returns:
-        A list of observables found in Yeti.
+        A dictionary with:
+
+        * known: the observables found in Yeti.
+        * unknown: the values not found in Yeti.
+        * links: for each known value, its links, each with the linked object's
+          reference (e.g. "entities/1234"), the link type, description and
+          direction (outbound when the value is the link's source). A link to
+          another looked-up value refers to its entry in "known".
+        * matches: for each value, references of the indicators matching it.
+        * objects: every other linked entity and observable, and every
+          matching indicator, listed once and keyed by its reference.
     """
     client = get_yeti_client()
-    results = client.match_observables(observables, regex_match=regex_match)
-    return results
+    response = client.match_observables(observables, regex_match=regex_match)
+    return _group_match_results(response)
 
 
 @mcp.tool()
@@ -112,7 +180,7 @@ def search_observables(
 def add_observables_bulk(
     observables: list[dict[str, str]],
     tags: list[str] | None = None,
-) -> list:
+) -> dict[str, Any]:
     """
     Add observables to Yeti.
 
@@ -128,7 +196,8 @@ def add_observables_bulk(
             (e.g. malware name, role of the IOC (C2, persistence, staging, etc.))
 
     Returns:
-        A list of added observables.
+        A dictionary with the added observables under "added" and the values
+        that could not be added under "failed".
     """
     client = get_yeti_client()
     results = client.add_observables_bulk(observables, tags=tags)
@@ -162,7 +231,7 @@ def link_objects(
     source: dict[str, Any],
     target: dict[str, Any],
     link_type: str = "related",
-    description: str | None = None,
+    description: str = "",
 ) -> dict:
     """
     Link two objects in Yeti.
@@ -180,7 +249,7 @@ def link_objects(
         source: The source object as a dictionary. It should contain 'id' and 'root_type' keys.
         target: The target object as a dictionary. It should contain 'id' and 'root_type' keys.
         link_type: The type of link to create (default is "related").
-        description: An optional description for the link.
+        description: A description for the link. Default is empty.
 
     Returns:
         A dictionary containing the details of the created link.
@@ -391,7 +460,7 @@ def get_neighbors(
     max_hops: int = 1,
     count: int = 10,
     page: int = 0,
-) -> list:
+) -> dict[str, Any]:
     """
     Get neighbors of an object by searching the Yeti graph. This can be
     used to find related objects based on the source object.
@@ -413,8 +482,9 @@ def get_neighbors(
         page: The page number for pagination. Starts at 0.
 
     Returns:
-        A list of neighbors for the source object. The neighbors already contain all object data.
-        If the number of results is lower than count, the last page has been reached.
+        A dictionary with the neighbors under "vertices" (keyed by ID, already
+        containing all object data), the links leading to them under "paths",
+        and the total number of results under "total".
     """
     client = get_yeti_client()
     if not target_types:
