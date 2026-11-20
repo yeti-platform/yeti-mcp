@@ -55,7 +55,9 @@ def get_multiple_tags(
 
 
 @mcp.tool()
-def match_observables(observables: list[str], regex_match: bool = True) -> list:
+def match_observables(
+    observables: list[str], regex_match: bool = True
+) -> dict[str, Any]:
     """
     Match observables against Yeti's database.
 
@@ -76,7 +78,8 @@ def match_observables(observables: list[str], regex_match: bool = True) -> list:
             Default is True.
 
     Returns:
-        A list of observables found in Yeti.
+        A dictionary with the known and unknown observables, the entities and
+        observables linked to the known ones, and the indicator matches.
     """
     client = get_yeti_client()
     results = client.match_observables(observables, regex_match=regex_match)
@@ -112,7 +115,7 @@ def search_observables(
 def add_observables_bulk(
     observables: list[dict[str, str]],
     tags: list[str] | None = None,
-) -> list:
+) -> dict[str, Any]:
     """
     Add observables to Yeti.
 
@@ -128,7 +131,8 @@ def add_observables_bulk(
             (e.g. malware name, role of the IOC (C2, persistence, staging, etc.))
 
     Returns:
-        A list of added observables.
+        A dictionary with the added observables under "added" and the values
+        that could not be added under "failed".
     """
     client = get_yeti_client()
     results = client.add_observables_bulk(observables, tags=tags)
@@ -162,7 +166,7 @@ def link_objects(
     source: dict[str, Any],
     target: dict[str, Any],
     link_type: str = "related",
-    description: str | None = None,
+    description: str = "",
 ) -> dict:
     """
     Link two objects in Yeti.
@@ -180,7 +184,7 @@ def link_objects(
         source: The source object as a dictionary. It should contain 'id' and 'root_type' keys.
         target: The target object as a dictionary. It should contain 'id' and 'root_type' keys.
         link_type: The type of link to create (default is "related").
-        description: An optional description for the link.
+        description: A description for the link. Default is empty.
 
     Returns:
         A dictionary containing the details of the created link.
@@ -391,7 +395,7 @@ def get_neighbors(
     max_hops: int = 1,
     count: int = 10,
     page: int = 0,
-) -> list:
+) -> dict[str, Any]:
     """
     Get neighbors of an object by searching the Yeti graph. This can be
     used to find related objects based on the source object.
@@ -413,8 +417,9 @@ def get_neighbors(
         page: The page number for pagination. Starts at 0.
 
     Returns:
-        A list of neighbors for the source object. The neighbors already contain all object data.
-        If the number of results is lower than count, the last page has been reached.
+        A dictionary with the neighbors under "vertices" (keyed by ID, already
+        containing all object data), the links leading to them under "paths",
+        and the total number of results under "total".
     """
     client = get_yeti_client()
     if not target_types:
