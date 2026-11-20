@@ -176,7 +176,7 @@ async def test_add_observables_bulk(mock_yeti_client):
         )
         assert result.data == bulk_response
         mock_yeti_client.return_value.add_observables_bulk.assert_called_once_with(
-            [{"type": "ip", "value": "1.2.3.4"}], tags=["malware"]
+            [{"type": "ip", "value": "1.2.3.4", "tags": ["malware"]}]
         )
 
 
@@ -421,3 +421,165 @@ async def test_search_entities_with_tags(mock_yeti_client):
         "name": "Emotet",
         "tags": ["loader"],
     }
+
+
+@pytest.mark.asyncio
+@patch("src.yeti_mcp.tools.get_yeti_client")
+async def test_add_observables_bulk_per_item_tags(mock_yeti_client):
+    mock_yeti_client.return_value.add_observables_bulk.return_value = {
+        "added": [],
+        "failed": [],
+    }
+    observables = [
+        {"type": "ipv4", "value": "1.2.3.4", "tags": ["c2", "emotet"]},
+        {"type": "hostname", "value": "evil.example.com"},
+    ]
+    async with Client(mcp) as client:
+        await client.call_tool(
+            "add_observables_bulk", {"observables": observables, "tags": ["emotet"]}
+        )
+    mock_yeti_client.return_value.add_observables_bulk.assert_called_once_with(
+        [
+            {"type": "ipv4", "value": "1.2.3.4", "tags": ["c2", "emotet"]},
+            {"type": "hostname", "value": "evil.example.com", "tags": ["emotet"]},
+        ]
+    )
+
+
+@pytest.mark.asyncio
+@patch("src.yeti_mcp.tools.get_yeti_client")
+async def test_create_entity(mock_yeti_client):
+    mock_yeti_client.return_value.find_entity.return_value = None
+    mock_yeti_client.return_value.new_entity.return_value = {
+        "id": "1",
+        "name": "Emotet",
+    }
+    async with Client(mcp) as client:
+        result = await client.call_tool(
+            "create_entity",
+            {
+                "entity_type": "malware",
+                "name": "Emotet",
+                "description": "Loader",
+                "tags": ["loader"],
+                "fields": {"aliases": ["Geodo"]},
+            },
+        )
+    assert result.data == {"created": True, "entity": {"id": "1", "name": "Emotet"}}
+    mock_yeti_client.return_value.find_entity.assert_called_once_with(
+        "Emotet", "malware"
+    )
+    mock_yeti_client.return_value.new_entity.assert_called_once_with(
+        {
+            "aliases": ["Geodo"],
+            "type": "malware",
+            "name": "Emotet",
+            "description": "Loader",
+        },
+        tags=["loader"],
+    )
+
+
+@pytest.mark.asyncio
+@patch("src.yeti_mcp.tools.get_yeti_client")
+async def test_create_entity_keeps_an_existing_one(mock_yeti_client):
+    existing = {"id": "1", "name": "Emotet", "description": "Analyst notes"}
+    mock_yeti_client.return_value.find_entity.return_value = existing
+    async with Client(mcp) as client:
+        result = await client.call_tool(
+            "create_entity",
+            {"entity_type": "malware", "name": "Emotet", "description": "Other"},
+        )
+    assert result.data == {"created": False, "entity": existing}
+    mock_yeti_client.return_value.new_entity.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("src.yeti_mcp.tools.get_yeti_client")
+async def test_create_indicator(mock_yeti_client):
+    mock_yeti_client.return_value.find_indicator.return_value = None
+    mock_yeti_client.return_value.new_indicator.return_value = {"id": "2"}
+    async with Client(mcp) as client:
+        result = await client.call_tool(
+            "create_indicator",
+            {
+                "indicator_type": "query",
+                "name": "Emotet DNS",
+                "pattern": "dns.question.name:*.evil.example.com",
+                "diamond": "infrastructure",
+                "location": "network",
+                "fields": {"query_type": "opensearch"},
+            },
+        )
+    assert result.data == {"created": True, "indicator": {"id": "2"}}
+    mock_yeti_client.return_value.find_indicator.assert_called_once_with(
+        "Emotet DNS", "query"
+    )
+    mock_yeti_client.return_value.new_indicator.assert_called_once_with(
+        {
+            "query_type": "opensearch",
+            "type": "query",
+            "name": "Emotet DNS",
+            "pattern": "dns.question.name:*.evil.example.com",
+            "diamond": "infrastructure",
+            "description": "",
+            "location": "network",
+        },
+        tags=None,
+    )
+
+
+@pytest.mark.asyncio
+@patch("src.yeti_mcp.tools.get_yeti_client")
+async def test_create_indicator_keeps_an_existing_one(mock_yeti_client):
+    existing = {"id": "2", "name": "Emotet DNS"}
+    mock_yeti_client.return_value.find_indicator.return_value = existing
+    async with Client(mcp) as client:
+        result = await client.call_tool(
+            "create_indicator",
+            {
+                "indicator_type": "query",
+                "name": "Emotet DNS",
+                "pattern": "x",
+                "diamond": "infrastructure",
+            },
+        )
+    assert result.data == {"created": False, "indicator": existing}
+    mock_yeti_client.return_value.new_indicator.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("src.yeti_mcp.tools.get_yeti_client")
+async def test_add_context(mock_yeti_client):
+    mock_yeti_client.return_value._url_root = "http://yeti"
+    mock_yeti_client.return_value.do_request.return_value = '{"id": "3", "context": []}'
+    async with Client(mcp) as client:
+        result = await client.call_tool(
+            "add_context",
+            {
+                "yeti_object": {"id": "3", "root_type": "observable"},
+                "source": "triage-agent",
+                "context": {"verdict": "malicious"},
+            },
+        )
+    assert result.data == {"id": "3", "context": []}
+    mock_yeti_client.return_value.do_request.assert_called_once_with(
+        "POST",
+        "http://yeti/api/v2/observables/3/context",
+        json_data={"source": "triage-agent", "context": {"verdict": "malicious"}},
+    )
+
+
+@pytest.mark.asyncio
+@patch("src.yeti_mcp.tools.get_yeti_client")
+async def test_get_object(mock_yeti_client):
+    mock_yeti_client.return_value._url_root = "http://yeti"
+    mock_yeti_client.return_value.do_request.return_value = '{"id": "4", "name": "x"}'
+    async with Client(mcp) as client:
+        result = await client.call_tool(
+            "get_object", {"root_type": "entity", "id": "4"}
+        )
+    assert result.data == {"id": "4", "name": "x"}
+    mock_yeti_client.return_value.do_request.assert_called_once_with(
+        "GET", "http://yeti/api/v2/entities/4"
+    )

@@ -1,7 +1,9 @@
+import json
 from typing import Any
 
 from fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from yeti.api import TYPE_TO_ENDPOINT
 
 from .utils import get_yeti_client
 
@@ -189,29 +191,39 @@ def search_observables(
 
 @mcp.tool(tags={"contribute"}, annotations=ADDS_DATA)
 def add_observables_bulk(
-    observables: list[dict[str, str]],
+    observables: list[dict[str, Any]],
     tags: list[str] | None = None,
 ) -> dict[str, Any]:
     """
     Add observables to Yeti.
 
-    All tags will be applied to all observables, so use with caution. If different
-    tags are needed for each observable, use several calls to `add_observables_bulk` instead.
+    Observables that already exist are not duplicated; the given tags are added
+    to them.
 
     Args:
         observables: A list of observables to add. Observables should be dictionaries
-            with keys like "type" and "value", e.g. [{"type": "ip", "value": "8.8.8.8"}].
+            with "type" and "value" keys, and optionally a "tags" list for tags that
+            only apply to that observable, e.g.
+            [{"type": "ipv4", "value": "8.8.8.8", "tags": ["c2"]}].
             A list of valid types can be found in the `get_supported_ioc_types` resource.
-        tags: A list of tags to associate with the observables. Only use
-            high-relevance tags related to the malicious nature of the observables.
-            (e.g. malware name, role of the IOC (C2, persistence, staging, etc.))
+        tags: A list of tags to add to every observable, on top of their own.
+            Only use high-relevance tags related to the malicious nature of the
+            observables (e.g. malware name, role of the IOC (C2, persistence,
+            staging, etc.))
 
     Returns:
         A dictionary with the added observables under "added" and the values
         that could not be added under "failed".
     """
+    items = []
+    for observable in observables:
+        item = dict(observable)
+        item_tags = list(item.get("tags") or []) + list(tags or [])
+        if item_tags:
+            item["tags"] = list(dict.fromkeys(item_tags))
+        items.append(item)
     client = get_yeti_client()
-    results = client.add_observables_bulk(observables, tags=tags)
+    results = client.add_observables_bulk(items)
     return results
 
 
@@ -268,6 +280,152 @@ def link_objects(
     client = get_yeti_client()
     result = client.link_objects(source, target, link_type, description)
     return result
+
+
+@mcp.tool(tags={"contribute"}, annotations=ADDS_DATA)
+def create_entity(
+    entity_type: str,
+    name: str,
+    description: str = "",
+    tags: list[str] | None = None,
+    fields: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Create an entity in Yeti, unless one with the same name and type exists.
+
+    Valid entity types include:
+
+        {attack-pattern, campaign, company, course-of-action, identity,
+        intrusion-set, investigation, malware, note, phone, threat-actor, tool,
+        vulnerability}
+
+    Args:
+        entity_type: The type of the entity, e.g. "malware".
+        name: The name of the entity.
+        description: A description of the entity, in Markdown.
+        tags: A list of tags to add to the new entity.
+        fields: Other fields of the entity type, e.g. {"aliases": ["Geodo"]}
+            for malware, or {"reference": "https://..."} for an investigation.
+
+    Returns:
+        A dictionary with "created" (False if an entity with the same name and
+        type already existed, which is then returned unchanged) and "entity".
+    """
+    client = get_yeti_client()
+    existing = client.find_entity(name, entity_type)
+    if existing:
+        return {"created": False, "entity": existing}
+    entity = {
+        **(fields or {}),
+        "type": entity_type,
+        "name": name,
+        "description": description,
+    }
+    return {"created": True, "entity": client.new_entity(entity, tags=tags)}
+
+
+@mcp.tool(tags={"contribute"}, annotations=ADDS_DATA)
+def create_indicator(
+    indicator_type: str,
+    name: str,
+    pattern: str,
+    diamond: str,
+    description: str = "",
+    location: str = "",
+    tags: list[str] | None = None,
+    fields: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Create an indicator in Yeti, unless one with the same name and type exists.
+
+    Valid indicator types include:
+
+        {regex, query, yara, sigma, suricata, forensicartifact}
+
+    Args:
+        indicator_type: The type of the indicator, e.g. "yara".
+        name: The name of the indicator (for YARA, the rule name).
+        pattern: The indicator itself: the regular expression, query, or rule.
+        diamond: The Diamond Model vertex the indicator describes, one of
+            {adversary, capability, infrastructure, victim}.
+        description: A description of the indicator, in Markdown.
+        location: Where the indicator applies, e.g. "filesystem" or "network".
+        tags: A list of tags to add to the new indicator.
+        fields: Other fields of the indicator type, e.g. {"query_type": "opensearch"}
+            for a query.
+
+    Returns:
+        A dictionary with "created" (False if an indicator with the same name
+        and type already existed, which is then returned unchanged) and
+        "indicator".
+    """
+    client = get_yeti_client()
+    existing = client.find_indicator(name, indicator_type)
+    if existing:
+        return {"created": False, "indicator": existing}
+    indicator = {
+        **(fields or {}),
+        "type": indicator_type,
+        "name": name,
+        "pattern": pattern,
+        "diamond": diamond,
+        "description": description,
+        "location": location,
+    }
+    return {
+        "created": True,
+        "indicator": client.new_indicator(indicator, tags=tags),
+    }
+
+
+@mcp.tool(tags={"contribute"}, annotations=ADDS_DATA)
+def add_context(
+    yeti_object: dict[str, Any],
+    source: str,
+    context: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Add a context entry to an observable, entity or indicator.
+
+    Context records what a source says about the object, e.g. a sandbox
+    verdict or where the object was seen. Existing entries are kept; an entry
+    identical to an existing one from the same source is not added twice.
+
+    Args:
+        yeti_object: The object, as a dictionary with "id" and "root_type" keys
+            ("observable", "entity" or "indicator").
+        source: The name of the source of the context, e.g. "triage-agent".
+        context: The context itself, as a flat dictionary.
+
+    Returns:
+        The updated object.
+    """
+    client = get_yeti_client()
+    endpoint = TYPE_TO_ENDPOINT[yeti_object["root_type"]]
+    response = client.do_request(
+        "POST",
+        f"{client._url_root}{endpoint}/{yeti_object['id']}/context",
+        json_data={"source": source, "context": context},
+    )
+    return json.loads(response)
+
+
+@mcp.tool(tags={"read"}, annotations=READ_ONLY)
+def get_object(root_type: str, id: str) -> dict[str, Any]:
+    """
+    Get one observable, entity, indicator or DFIQ object by ID.
+
+    Args:
+        root_type: The kind of object: "observable", "entity", "indicator" or "dfiq".
+        id: The object's ID, e.g. "1234" (not "entities/1234").
+
+    Returns:
+        The object, with all its fields.
+    """
+    client = get_yeti_client()
+    endpoint = TYPE_TO_ENDPOINT[root_type]
+    response = client.do_request("GET", f"{client._url_root}{endpoint}/{id}")
+    return json.loads(response)
 
 
 @mcp.tool(tags={"read"}, annotations=READ_ONLY)

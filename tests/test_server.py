@@ -11,7 +11,14 @@ from starlette.websockets import WebSocketDisconnect
 from src import server
 from src.yeti_mcp.auth import BearerTokenMiddleware, is_loopback
 
-CONTRIBUTE_TOOLS = {"add_observables_bulk", "tag_object", "link_objects"}
+CONTRIBUTE_TOOLS = {
+    "add_observables_bulk",
+    "tag_object",
+    "link_objects",
+    "create_entity",
+    "create_indicator",
+    "add_context",
+}
 
 
 async def _tools(mcp):
@@ -22,7 +29,7 @@ async def _tools(mcp):
 @pytest.mark.asyncio
 async def test_read_profile_lists_only_read_tools():
     tools = await _tools(server.create_server("read"))
-    assert len(tools) == 11
+    assert len(tools) == 12
     assert not CONTRIBUTE_TOOLS & set(tools)
     assert all(tool.annotations.readOnlyHint for tool in tools.values())
 
@@ -40,7 +47,7 @@ async def test_read_profile_refuses_contribute_tools():
 @pytest.mark.asyncio
 async def test_contribute_profile_lists_every_tool():
     tools = await _tools(server.create_server("contribute"))
-    assert len(tools) == 14
+    assert len(tools) == 18
     assert CONTRIBUTE_TOOLS <= set(tools)
     for name in CONTRIBUTE_TOOLS:
         assert tools[name].annotations.readOnlyHint is False

@@ -21,7 +21,7 @@ allows, a client of this server can ask for.
 | Profile | Tools |
 | --- | --- |
 | `read` (default) | search and lookup tools only |
-| `contribute` | also `add_observables_bulk`, `tag_object` and `link_objects`, which add data to Yeti |
+| `contribute` | also `add_observables_bulk`, `create_entity`, `create_indicator`, `add_context`, `tag_object` and `link_objects`, which add data to Yeti |
 
 No tool deletes data. Each tool carries MCP annotations (`readOnlyHint`,
 `destructiveHint`), which clients can use to decide when to ask for
